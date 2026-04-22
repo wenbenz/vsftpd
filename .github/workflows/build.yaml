@@ -29,9 +29,6 @@ jobs:
     permissions:
       packages: write
 
-    outputs:
-      vsftpd-version: ${{ steps.vsftpd-version.outputs.version }}
-
     steps:
       - uses: actions/checkout@v4
 
@@ -61,34 +58,3 @@ jobs:
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:latest
             ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
 
-      - name: Extract vsftpd version from image
-        id: vsftpd-version
-        run: |
-          VERSION=$(docker run --rm \
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} \
-            apk info vsftpd 2>/dev/null | grep '^vsftpd-' | head -1 | sed 's/^vsftpd-//' | sed 's/ .*//')
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
-
-  update-chart:
-    name: Update Chart AppVersion
-    runs-on: ubuntu-latest
-    needs: build-push
-    if: github.ref == 'refs/heads/main'
-    permissions:
-      contents: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Update appVersion if changed
-        run: |
-          CURRENT=$(grep '^appVersion:' chart/Chart.yaml | sed 's/appVersion: *//' | tr -d '"')
-          NEW="${{ needs.build-push.outputs.vsftpd-version }}"
-          if [ "$CURRENT" != "$NEW" ]; then
-            sed -i "s/^appVersion:.*/appVersion: \"${NEW}\"/" chart/Chart.yaml
-            git config user.name "github-actions[bot]"
-            git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add chart/Chart.yaml
-            git commit -m "chore: update vsftpd appVersion to ${NEW}"
-            git push origin HEAD:${GITHUB_REF_NAME}
-          fi
