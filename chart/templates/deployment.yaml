@@ -116,7 +116,7 @@ spec:
         {{- end }}
         - name: data
           {{- if .Values.persistence.enabled }}
-          {{- if not empty .Values.persistence.hostPath }}
+          {{- if .Values.persistence.hostPath }}
           hostPath:
             path: {{ .Values.persistence.hostPath }}
             type: Directory
