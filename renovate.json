@@ -1,0 +1,31 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "schedule": ["every weekend"],
+  "packageRules": [
+    {
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "all minor and patch updates",
+      "groupSlug": "all-minor-patch"
+    }
+  ],
+  "dockerfile": {
+    "enabled": true
+  },
+  "helm-values": {
+    "enabled": true
+  },
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^chart/Chart\\.yaml$"],
+      "matchStrings": [
+        "appVersion:\\s*\"?(?<currentValue>[^\"\\n]+)\"?"
+      ],
+      "depNameTemplate": "vsftpd",
+      "datasourceTemplate": "repology",
+      "versioningTemplate": "loose",
+      "registryUrlTemplate": "https://repology.org/api/v1/project/vsftpd"
+    }
+  ]
+}
