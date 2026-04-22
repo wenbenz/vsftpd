@@ -28,14 +28,8 @@ spec:
               readOnly: true
             - name: etc-data
               mountPath: /etc-data
-            {{- if .Values.persistence.enabled }}
             - name: data
               mountPath: /home
-            {{- else }}
-            - name: home-data
-              mountPath: /home
-            {{- end }}
-
       containers:
         - name: vsftpd
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -90,13 +84,8 @@ spec:
               mountPath: /etc/vsftpd/ssl
               readOnly: true
             {{- end }}
-            {{- if .Values.persistence.enabled }}
             - name: data
               mountPath: /home
-            {{- else }}
-            - name: home-data
-              mountPath: /home
-            {{- end }}
 
       volumes:
         - name: vsftpd-conf
@@ -125,11 +114,16 @@ spec:
             secretName: {{ include "vsftpd.tlsSecretName" . }}
             defaultMode: 0400
         {{- end }}
-        {{- if .Values.persistence.enabled }}
         - name: data
+          {{- if .Values.persistence.enabled }}
+          {{- if not empty .Values.persistence.hostPath }}
+          hostPath:
+            path: {{ .Values.persistence.hostPath }}
+            type: Directory
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "vsftpd.fullname" . }}-data
-        {{- else }}
-        - name: home-data
+          {{- end }}
+          {{- else }}
           emptyDir: {}
-        {{- end }}
+          {{- end }}

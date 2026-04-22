@@ -34,6 +34,7 @@ tls:
 
 persistence:
   enabled: true
+  hostPath: ""
   size: 1Gi
   storageClass: ""
   accessMode: ReadWriteOnce

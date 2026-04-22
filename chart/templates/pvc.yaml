@@ -1,4 +1,4 @@
-{{- if .Values.persistence.enabled }}
+{{- if .Values.persistence.enabled and empty .Values.persistence.hostPath}}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
