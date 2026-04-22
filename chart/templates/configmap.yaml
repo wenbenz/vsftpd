@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vsftpd.fullname" . }}-conf
+  labels:
+    {{- include "vsftpd.labels" . | nindent 4 }}
+data:
+  vsftpd.conf: |
+    anonymous_enable=NO
+    local_enable=YES
+    write_enable={{ if .Values.writeEnable }}YES{{ else }}NO{{ end }}
+    local_umask=077
+    nopriv_user=nobody
+    chroot_local_user=YES
+    pasv_enable=YES
+    pasv_min_port={{ .Values.service.ports.passive.min }}
+    pasv_max_port={{ .Values.service.ports.passive.max }}
+    {{- if .Values.pasvAddress }}
+    pasv_address={{ .Values.pasvAddress }}
+    {{- end }}
+    listen=YES
+    listen_ipv6=NO
+    userlist_enable=NO
+    pam_service_name=login
+    xferlog_enable=YES
+    xferlog_std_format=YES
+    seccomp_sandbox=NO
+    idle_session_timeout=300
+    data_connection_timeout=120
+    max_clients=10
+    max_per_ip=3
+    {{- if include "vsftpd.tlsEnabled" . }}
+    ssl_enable=YES
+    rsa_cert_file=/etc/vsftpd/ssl/tls.crt
+    rsa_private_key_file=/etc/vsftpd/ssl/tls.key
+    force_local_logins_ssl=YES
+    force_local_data_ssl=YES
+    {{- end }}

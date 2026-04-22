@@ -1,0 +1,20 @@
+{{- if .Values.tls.certManager.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "vsftpd.fullname" . }}-tls
+  labels:
+    {{- include "vsftpd.labels" . | nindent 4 }}
+spec:
+  secretName: {{ include "vsftpd.fullname" . }}-tls
+  issuerRef:
+    name: {{ required "tls.certManager.issuerRef.name is required when certManager.enabled is true" .Values.tls.certManager.issuerRef.name }}
+    kind: {{ .Values.tls.certManager.issuerRef.kind }}
+  commonName: {{ required "tls.certManager.commonName is required when certManager.enabled is true" .Values.tls.certManager.commonName }}
+  {{- if .Values.tls.certManager.dnsNames }}
+  dnsNames:
+    {{- toYaml .Values.tls.certManager.dnsNames | nindent 4 }}
+  {{- end }}
+  duration: {{ .Values.tls.certManager.duration }}
+  renewBefore: {{ .Values.tls.certManager.renewBefore }}
+{{- end }}

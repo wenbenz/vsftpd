@@ -1,0 +1,78 @@
+image:
+  repository: ghcr.io/ben/vsftpd
+  # Defaults to .Chart.AppVersion when empty
+  tag: ""
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  ports:
+    ftp: 21
+    passive:
+      min: 21100
+      max: 21110
+
+pasvAddress: ""
+
+# TLS — choose one option; both omitted means TLS disabled.
+tls:
+  # Option A — bring your own secret (type: kubernetes.io/tls)
+  #   kubectl create secret tls ftp-tls --cert=server.crt --key=server.key
+  certSecret: ""
+
+  # Option B — let cert-manager provision the certificate
+  certManager:
+    enabled: false
+    issuerRef:
+      name: letsencrypt-prod
+      kind: ClusterIssuer
+    commonName: ftp.example.com
+    dnsNames:
+      - ftp.example.com
+    duration: 2160h
+    renewBefore: 360h
+
+persistence:
+  enabled: true
+  size: 1Gi
+  storageClass: ""
+  accessMode: ReadWriteOnce
+
+# Set to false to create read-only users
+writeEnable: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 32Mi
+  limits:
+    cpu: 200m
+    memory: 128Mi
+
+# NetworkPolicy — restrict FTP ingress to specific CIDRs.
+# Set enabled: true and add at least one CIDR, or leave ingressCidrs empty to allow all sources.
+networkPolicy:
+  enabled: false
+  ingressCidrs: []
+  # - 10.0.0.0/8
+  # - 192.168.0.0/16
+
+# Multi-user support
+users:
+  - username: alice
+    uid: 1001
+  - username: bob
+    uid: 1002
+
+# Option A — inline passwords (dev only, not recommended for production)
+# Add a `password` field to each user entry above, e.g.:
+#   - username: alice
+#     uid: 1001
+#     password: changeme
+
+# Option B — existing external secret (recommended for production)
+# The secret must contain one key per username, value = password
+# Example: kubectl create secret generic ftp-passwords \
+#            --from-literal=alice=secret1 \
+#            --from-literal=bob=secret2
+existingSecret: ""
