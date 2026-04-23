@@ -13,6 +13,11 @@ service:
 
 pasvAddress: ""
 
+ingress:
+  enabled: false
+  className: "traefik"
+  hostname: ftp.example.com
+
 # TLS — choose one option; both omitted means TLS disabled.
 tls:
   # Option A — bring your own secret (type: kubernetes.io/tls)
