@@ -11,12 +11,8 @@ service:
       min: 21100
       max: 21110
 
+hostname: "ftp.benzhao.dev"
 pasvAddress: ""
-
-ingress:
-  enabled: false
-  className: "traefik"
-  hostname: ftp.example.com
 
 # TLS — choose one option; both omitted means TLS disabled.
 tls:
@@ -30,9 +26,6 @@ tls:
     issuerRef:
       name: letsencrypt-prod
       kind: ClusterIssuer
-    commonName: ftp.example.com
-    dnsNames:
-      - ftp.example.com
     duration: 2160h
     renewBefore: 360h
 

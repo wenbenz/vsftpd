@@ -1,0 +1,24 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: Gateway
+metadata:
+  name: {{ include "vsftpd.fullname" . }}-gateway
+  labels:
+    {{- include "vsftpd.labels" . | nindent 4 }}
+spec:
+  gatewayClassName: traefik
+  listeners:
+  - name: ftp
+    protocol: TCP
+    port: 21
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: {{ include "vsftpd.fullname" . }}-ftp-route
+spec:
+  parentRefs:
+  - name: {{ include "vsftpd.fullname" . }}-gateway
+  rules:
+  - backendRefs:
+    - name: vsftpd
+      port: 21

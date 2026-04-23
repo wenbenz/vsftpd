@@ -10,10 +10,10 @@ spec:
   issuerRef:
     name: {{ required "tls.certManager.issuerRef.name is required when certManager.enabled is true" .Values.tls.certManager.issuerRef.name }}
     kind: {{ .Values.tls.certManager.issuerRef.kind }}
-  commonName: {{ required "tls.certManager.commonName is required when certManager.enabled is true" .Values.tls.certManager.commonName }}
-  {{- if .Values.tls.certManager.dnsNames }}
+  commonName: {{ required "tls.certManager.commonName is required when certManager.enabled is true" .Values.hostname }}
+  {{- if .Values.hostname }}
   dnsNames:
-    {{- toYaml .Values.tls.certManager.dnsNames | nindent 4 }}
+    - {{ .Values.hostname }}
   {{- end }}
   duration: {{ .Values.tls.certManager.duration }}
   renewBefore: {{ .Values.tls.certManager.renewBefore }}
