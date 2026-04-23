@@ -5,13 +5,14 @@ metadata:
   labels:
     {{- include "vsftpd.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: NodePort
   selector:
     {{- include "vsftpd.selectorLabels" . | nindent 4 }}
   ports:
     - name: ftp
-      port: {{ .Values.service.ports.ftp }}
-      targetPort: ftp
+      port: 21
+      targetPort: 21
+      nodePort: {{ .Values.service.ports.ftp }}
       protocol: TCP
     {{- $min := .Values.service.ports.passive.min }}
     {{- $max := .Values.service.ports.passive.max }}
@@ -19,5 +20,6 @@ spec:
     - name: pasv-{{ . }}
       port: {{ . }}
       targetPort: {{ . }}
+      nodePort: {{ . }}
       protocol: TCP
     {{- end }}

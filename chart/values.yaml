@@ -4,12 +4,11 @@ image:
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
   ports:
-    ftp: 21
+    ftp: 30021
     passive:
-      min: 21100
-      max: 21110
+      min: 32100
+      max: 32110
 
 hostname: "ftp.benzhao.dev"
 pasvAddress: ""

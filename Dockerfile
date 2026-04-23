@@ -11,6 +11,7 @@ RUN chmod +x /entrypoint.sh /init-users.sh \
     && chmod 600 /etc/vsftpd/vsftpd.conf
 
 EXPOSE 21
-EXPOSE 21100-21110
+# Kubernetes friendly range
+EXPOSE 32100-32110
 
 ENTRYPOINT ["/entrypoint.sh"]
