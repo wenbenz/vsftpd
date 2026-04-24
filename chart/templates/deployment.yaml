@@ -6,6 +6,7 @@ metadata:
     {{- include "vsftpd.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "vsftpd.selectorLabels" . | nindent 6 }}
