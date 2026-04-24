@@ -8,11 +8,12 @@ PDB_FILE="$ETC_DATA/pureftpd.pdb"
 cmd_init() {
   USERS_CONF="/etc/pure-ftpd/users.conf"
   PASSWORDS_DIR="/etc/pure-ftpd/passwords"
+  HASHED_PASSWORDS_DIR="/etc/pure-ftpd/hashed-passwords"
 
   touch "$PASSWD_FILE"
 
   if [ -f "$USERS_CONF" ]; then
-    while IFS=: read -r username uid; do
+    while IFS=: read -r username uid gid; do
       [ -z "$username" ] && continue
 
       if ! echo "$username" | grep -qE '^[a-z0-9_-]+$'; then
@@ -25,18 +26,30 @@ cmd_init() {
         continue
       fi
 
-      if [ -f "$PASSWORDS_DIR/$username" ]; then
+      gid="${gid:-$uid}"
+      if ! echo "$gid" | grep -qE '^[0-9]+$' || [ "$gid" -lt 1000 ]; then
+        echo "Skipping unsafe GID $gid for user $username" >&2
+        continue
+      fi
+
+      if [ -f "$HASHED_PASSWORDS_DIR/$username" ]; then
+        hash=$(tr -d '\n' < "$HASHED_PASSWORDS_DIR/$username")
+        # Write passwd entry directly — fields: login:hash:uid:gid:gecos:home + 13 empty optional fields
+        printf '%s:%s:%s:%s::%s:::::::::::::\n' \
+          "$username" "$hash" "$uid" "$gid" "/home/$username" \
+          >> "$PASSWD_FILE"
+      elif [ -f "$PASSWORDS_DIR/$username" ]; then
         password=$(tr -d '\n' < "$PASSWORDS_DIR/$username")
         printf '%s\n%s\n' "$password" "$password" | \
           pure-pw useradd "$username" \
             -f "$PASSWD_FILE" \
             -u "$uid" \
-            -g "$uid" \
+            -g "$gid" \
             -d "/home/$username"
       fi
 
       mkdir -p "/home/$username"
-      chown "$uid:$uid" "/home/$username"
+      chown "$uid:$gid" "/home/$username"
       chmod "$([ "${WRITE_ENABLE:-YES}" = "NO" ] && echo 555 || echo 755)" "/home/$username"
     done < "$USERS_CONF"
   fi
