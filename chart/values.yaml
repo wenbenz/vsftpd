@@ -1,6 +1,6 @@
 image:
-  repository: ghcr.io/wenbenz/vsftpd
-  tag: "ba2ce15931db97e3a9a4f7bea99dbea00a136295"
+  repository: ghcr.io/wenbenz/pure-ftpd
+  tag: ""
   pullPolicy: IfNotPresent
 
 service:
@@ -37,6 +37,9 @@ persistence:
 
 # Set to false to create read-only users
 writeEnable: true
+
+maxClients: 10
+maxPerIp: 3
 
 resources:
   requests:

@@ -1,46 +1,64 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "vsftpd.fullname" . }}
+  name: {{ include "pureftpd.fullname" . }}
   labels:
-    {{- include "vsftpd.labels" . | nindent 4 }}
+    {{- include "pureftpd.labels" . | nindent 4 }}
 spec:
   replicas: 1
   revisionHistoryLimit: 3
   selector:
     matchLabels:
-      {{- include "vsftpd.selectorLabels" . | nindent 6 }}
+      {{- include "pureftpd.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "vsftpd.selectorLabels" . | nindent 8 }}
+        {{- include "pureftpd.selectorLabels" . | nindent 8 }}
     spec:
       initContainers:
         - name: init-users
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/entrypoint.sh", "init"]
+          env:
+            - name: WRITE_ENABLE
+              value: "{{ if .Values.writeEnable }}YES{{ else }}NO{{ end }}"
           volumeMounts:
             - name: users-conf
-              mountPath: /etc/vsftpd/users.conf
+              mountPath: /etc/pure-ftpd/users.conf
               subPath: users.conf
             - name: passwords
-              mountPath: /etc/vsftpd/passwords
+              mountPath: /etc/pure-ftpd/passwords
               readOnly: true
             - name: etc-data
               mountPath: /etc-data
             - name: data
               mountPath: /home
+            {{- if include "pureftpd.tlsEnabled" . }}
+            - name: tls
+              mountPath: /etc/pure-ftpd/ssl
+              readOnly: true
+            {{- end }}
       containers:
-        - name: vsftpd
+        - name: pure-ftpd
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/entrypoint.sh", "start"]
-          {{- if include "vsftpd.tlsEnabled" . }}
           env:
-            - name: OPENSSL_CONF
-              value: /etc/vsftpd/openssl.cnf
-          {{- end }}
+            - name: PASV_MIN_PORT
+              value: "{{ .Values.service.ports.passive.min }}"
+            - name: PASV_MAX_PORT
+              value: "{{ .Values.service.ports.passive.max }}"
+            - name: MAX_CLIENTS
+              value: "{{ .Values.maxClients }}"
+            - name: MAX_PER_IP
+              value: "{{ .Values.maxPerIp }}"
+            - name: WRITE_ENABLE
+              value: "{{ if .Values.writeEnable }}YES{{ else }}NO{{ end }}"
+            {{- if .Values.pasvAddress }}
+            - name: PASV_ADDRESS
+              value: "{{ .Values.pasvAddress }}"
+            {{- end }}
           securityContext:
             readOnlyRootFilesystem: true
             capabilities:
@@ -66,53 +84,32 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            - name: vsftpd-conf
-              mountPath: /etc/vsftpd/vsftpd.conf
-              subPath: vsftpd.conf
-            {{- if include "vsftpd.tlsEnabled" . }}
-            - name: vsftpd-conf
-              mountPath: /etc/vsftpd/openssl.cnf
-              subPath: openssl.cnf
+            - name: etc-data
+              mountPath: /etc-data
+              readOnly: true
+            {{- if include "pureftpd.tlsEnabled" . }}
+            - name: etc-data
+              mountPath: /etc/ssl/private/pure-ftpd.pem
+              subPath: pure-ftpd.pem
               readOnly: true
             {{- end }}
-            - name: etc-data
-              mountPath: /etc/passwd
-              subPath: passwd
-              readOnly: true
-            - name: etc-data
-              mountPath: /etc/shadow
-              subPath: shadow
-              readOnly: true
-            - name: etc-data
-              mountPath: /etc/group
-              subPath: group
-              readOnly: true
             - name: tmp
               mountPath: /tmp
             - name: run
               mountPath: /var/run
             - name: log
               mountPath: /var/log
-            {{- if include "vsftpd.tlsEnabled" . }}
-            - name: tls
-              mountPath: /etc/vsftpd/ssl
-              readOnly: true
-            {{- end }}
             - name: data
               mountPath: /home
 
       volumes:
-        - name: vsftpd-conf
-          configMap:
-            name: {{ include "vsftpd.fullname" . }}-conf
-            defaultMode: 0600
         - name: users-conf
           configMap:
-            name: {{ include "vsftpd.fullname" . }}-users
+            name: {{ include "pureftpd.fullname" . }}-users
             defaultMode: 0400
         - name: passwords
           secret:
-            secretName: {{ if .Values.existingSecret }}{{ .Values.existingSecret }}{{ else }}{{ include "vsftpd.fullname" . }}-passwords{{ end }}
+            secretName: {{ if .Values.existingSecret }}{{ .Values.existingSecret }}{{ else }}{{ include "pureftpd.fullname" . }}-passwords{{ end }}
             defaultMode: 0400
         - name: etc-data
           emptyDir: {}
@@ -125,10 +122,10 @@ spec:
         - name: log
           emptyDir:
             medium: Memory
-        {{- if include "vsftpd.tlsEnabled" . }}
+        {{- if include "pureftpd.tlsEnabled" . }}
         - name: tls
           secret:
-            secretName: {{ include "vsftpd.tlsSecretName" . }}
+            secretName: {{ include "pureftpd.tlsSecretName" . }}
             defaultMode: 0400
         {{- end }}
         - name: data
@@ -139,7 +136,7 @@ spec:
             type: Directory
           {{- else }}
           persistentVolumeClaim:
-            claimName: {{ include "vsftpd.fullname" . }}-data
+            claimName: {{ include "pureftpd.fullname" . }}-data
           {{- end }}
           {{- else }}
           emptyDir: {}

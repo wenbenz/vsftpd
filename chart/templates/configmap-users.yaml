@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: {{ include "vsftpd.fullname" . }}-users
+  name: {{ include "pureftpd.fullname" . }}-users
   labels:
-    {{- include "vsftpd.labels" . | nindent 4 }}
+    {{- include "pureftpd.labels" . | nindent 4 }}
 data:
   users.conf: |
     {{- range .Values.users }}

@@ -1,10 +1,15 @@
 #!/bin/sh
 set -e
 
+ETC_DATA="/etc-data"
+PASSWD_FILE="$ETC_DATA/pureftpd.passwd"
+PDB_FILE="$ETC_DATA/pureftpd.pdb"
+
 cmd_init() {
-  USERS_CONF="/etc/vsftpd/users.conf"
-  PASSWORDS_DIR="/etc/vsftpd/passwords"
-  ETC_DATA="/etc-data"
+  USERS_CONF="/etc/pure-ftpd/users.conf"
+  PASSWORDS_DIR="/etc/pure-ftpd/passwords"
+
+  touch "$PASSWD_FILE"
 
   if [ -f "$USERS_CONF" ]; then
     while IFS=: read -r username uid; do
@@ -20,38 +25,49 @@ cmd_init() {
         continue
       fi
 
-      if ! id "$username" >/dev/null 2>&1; then
-        adduser -D -H -u "$uid" "$username"
-      fi
-
       if [ -f "$PASSWORDS_DIR/$username" ]; then
         password=$(tr -d '\n' < "$PASSWORDS_DIR/$username")
-        echo "$username:$password" | chpasswd
+        printf '%s\n%s\n' "$password" "$password" | \
+          pure-pw useradd "$username" \
+            -f "$PASSWD_FILE" \
+            -u "$uid" \
+            -g "$uid" \
+            -d "/home/$username"
       fi
 
-      mkdir -p "/home/$username/uploads"
-      chown root:root "/home/$username"
-      chmod 755 "/home/$username"
-      chown "$username:$username" "/home/$username/uploads"
-      chmod 755 "/home/$username/uploads"
+      mkdir -p "/home/$username"
+      chown "$uid:$uid" "/home/$username"
+      chmod "$([ "${WRITE_ENABLE:-YES}" = "NO" ] && echo 555 || echo 755)" "/home/$username"
     done < "$USERS_CONF"
   fi
 
-  if [ -d "$ETC_DATA" ]; then
-    cp /etc/passwd "$ETC_DATA/passwd"
-    cp /etc/shadow "$ETC_DATA/shadow"
-    cp /etc/group  "$ETC_DATA/group"
-    chmod 644 "$ETC_DATA/passwd"
-    chmod 640 "$ETC_DATA/shadow"
-    chmod 644 "$ETC_DATA/group"
+  pure-pw mkdb "$PDB_FILE" -f "$PASSWD_FILE"
+
+  if [ -f /etc/pure-ftpd/ssl/tls.key ] && [ -f /etc/pure-ftpd/ssl/tls.crt ]; then
+    cat /etc/pure-ftpd/ssl/tls.key /etc/pure-ftpd/ssl/tls.crt > "$ETC_DATA/pure-ftpd.pem"
+    chmod 600 "$ETC_DATA/pure-ftpd.pem"
   fi
 }
 
 cmd_start() {
-  export LD_PRELOAD=/usr/local/lib/fix-ssl-cache.so
-  touch /var/log/vsftpd.log
-  tail -f /var/log/vsftpd.log &
-  exec vsftpd /etc/vsftpd/vsftpd.conf
+  set -- \
+    -l "puredb:$PDB_FILE" \
+    -u 1000 \
+    -A \
+    -j \
+    -p "${PASV_MIN_PORT:-32100}:${PASV_MAX_PORT:-32110}" \
+    -c "${MAX_CLIENTS:-10}" \
+    -C "${MAX_PER_IP:-3}" \
+    -I 300 \
+    -T 120 \
+    -O "clf:/var/log/pure-ftpd.log"
+
+  [ -n "${PASV_ADDRESS:-}" ] && set -- "$@" -P "${PASV_ADDRESS}"
+  [ -f /etc/ssl/private/pure-ftpd.pem ] && set -- "$@" -Y 1
+
+  touch /var/log/pure-ftpd.log
+  tail -f /var/log/pure-ftpd.log &
+  exec pure-ftpd "$@"
 }
 
 case "${1:-}" in

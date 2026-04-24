@@ -1,11 +1,14 @@
 services:
-  vsftpd:
-    image: vsftpd:local
+  pure-ftpd:
+    image: pure-ftpd:local
     ports:
       - "21:21"
-      - "21100-21110:21100-21110"
+      - "32100-32110:32100-32110"
     volumes:
-      - ../../vsftpd.conf:/etc/vsftpd/vsftpd.conf:ro
-      - ./users.conf:/etc/vsftpd/users.conf:ro
-      - ./passwords:/etc/vsftpd/passwords:ro
+      - ./users.conf:/etc/pure-ftpd/users.conf:ro
+      - ./passwords:/etc/pure-ftpd/passwords:ro
+      - etc-data:/etc-data
       # - ./data:/home
+
+volumes:
+  etc-data:
