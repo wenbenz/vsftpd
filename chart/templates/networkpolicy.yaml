@@ -1,0 +1,31 @@
+{{- if .Values.networkPolicy.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: {{ include "vsftpd.fullname" . }}
+  labels:
+    {{- include "vsftpd.labels" . | nindent 4 }}
+spec:
+  podSelector:
+    matchLabels:
+      {{- include "vsftpd.selectorLabels" . | nindent 6 }}
+  policyTypes:
+    - Ingress
+  ingress:
+    - ports:
+        - port: 21
+          protocol: TCP
+        {{- $min := .Values.service.ports.passive.min }}
+        {{- $max := .Values.service.ports.passive.max }}
+        {{- range untilStep (int $min) (add1 (int $max) | int) 1 }}
+        - port: {{ . }}
+          protocol: TCP
+        {{- end }}
+      {{- if .Values.networkPolicy.ingressCidrs }}
+      from:
+        {{- range .Values.networkPolicy.ingressCidrs }}
+        - ipBlock:
+            cidr: {{ . }}
+        {{- end }}
+      {{- end }}
+{{- end }}

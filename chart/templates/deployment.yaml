@@ -1,0 +1,129 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vsftpd.fullname" . }}
+  labels:
+    {{- include "vsftpd.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "vsftpd.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "vsftpd.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: init-users
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["/init-users.sh"]
+          volumeMounts:
+            - name: users-conf
+              mountPath: /etc/vsftpd/users.conf
+              subPath: users.conf
+            - name: passwords
+              mountPath: /etc/vsftpd/passwords
+              readOnly: true
+            - name: etc-data
+              mountPath: /etc-data
+            - name: data
+              mountPath: /home
+      containers:
+        - name: vsftpd
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          command: ["vsftpd", "/etc/vsftpd/vsftpd.conf"]
+          securityContext:
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+              add:
+                - NET_BIND_SERVICE
+                - SETUID
+                - SETGID
+                - CHOWN
+                - DAC_OVERRIDE
+                - SYS_CHROOT
+          ports:
+            - name: ftp
+              containerPort: 21
+              protocol: TCP
+            {{- $min := .Values.service.ports.passive.min }}
+            {{- $max := .Values.service.ports.passive.max }}
+            {{- range untilStep (int $min) (add1 (int $max) | int) 1 }}
+            - name: pasv-{{ . }}
+              containerPort: {{ . }}
+              protocol: TCP
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          volumeMounts:
+            - name: vsftpd-conf
+              mountPath: /etc/vsftpd/vsftpd.conf
+              subPath: vsftpd.conf
+            - name: etc-data
+              mountPath: /etc/passwd
+              subPath: passwd
+              readOnly: true
+            - name: etc-data
+              mountPath: /etc/shadow
+              subPath: shadow
+              readOnly: true
+            - name: etc-data
+              mountPath: /etc/group
+              subPath: group
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+            - name: run
+              mountPath: /var/run
+            {{- if include "vsftpd.tlsEnabled" . }}
+            - name: tls
+              mountPath: /etc/vsftpd/ssl
+              readOnly: true
+            {{- end }}
+            - name: data
+              mountPath: /home
+
+      volumes:
+        - name: vsftpd-conf
+          configMap:
+            name: {{ include "vsftpd.fullname" . }}-conf
+            defaultMode: 0600
+        - name: users-conf
+          configMap:
+            name: {{ include "vsftpd.fullname" . }}-users
+            defaultMode: 0400
+        - name: passwords
+          secret:
+            secretName: {{ if .Values.existingSecret }}{{ .Values.existingSecret }}{{ else }}{{ include "vsftpd.fullname" . }}-passwords{{ end }}
+            defaultMode: 0400
+        - name: etc-data
+          emptyDir: {}
+        - name: tmp
+          emptyDir:
+            medium: Memory
+        - name: run
+          emptyDir:
+            medium: Memory
+        {{- if include "vsftpd.tlsEnabled" . }}
+        - name: tls
+          secret:
+            secretName: {{ include "vsftpd.tlsSecretName" . }}
+            defaultMode: 0400
+        {{- end }}
+        - name: data
+          {{- if .Values.persistence.enabled }}
+          {{- if .Values.persistence.hostPath }}
+          hostPath:
+            path: {{ .Values.persistence.hostPath }}
+            type: Directory
+          {{- else }}
+          persistentVolumeClaim:
+            claimName: {{ include "vsftpd.fullname" . }}-data
+          {{- end }}
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
