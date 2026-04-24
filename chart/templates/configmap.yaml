@@ -23,8 +23,10 @@ data:
     background=NO
     userlist_enable=NO
     pam_service_name=login
-    xferlog_enable=NO
-    xferlog_std_format=YES
+    xferlog_enable=YES
+    xferlog_file=/var/log/vsftpd.log
+    xferlog_std_format=NO
+    log_ftp_protocol=YES
     seccomp_sandbox=NO
     idle_session_timeout=300
     data_connection_timeout=120
