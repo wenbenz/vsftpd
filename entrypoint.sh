@@ -59,14 +59,11 @@ cmd_start() {
     -c "${MAX_CLIENTS:-10}" \
     -C "${MAX_PER_IP:-3}" \
     -I 300 \
-    -T 120 \
-    -O "clf:/var/log/pure-ftpd.log"
+    -T 120
 
   [ -n "${PASV_ADDRESS:-}" ] && set -- "$@" -P "${PASV_ADDRESS}"
   [ -f /etc/ssl/private/pure-ftpd.pem ] && set -- "$@" -Y 1
 
-  touch /var/log/pure-ftpd.log
-  tail -f /var/log/pure-ftpd.log &
   exec pure-ftpd "$@"
 }
 
