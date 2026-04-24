@@ -34,7 +34,7 @@ spec:
         - name: vsftpd
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["vsftpd", "/etc/vsftpd/vsftpd.conf"]
+          command: ["sh", "-c", "touch /var/log/vsftpd.log && tail -f /var/log/vsftpd.log & exec vsftpd /etc/vsftpd/vsftpd.conf"]
           securityContext:
             readOnlyRootFilesystem: true
             capabilities:
