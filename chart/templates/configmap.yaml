@@ -20,6 +20,7 @@ data:
     {{- end }}
     listen=YES
     listen_ipv6=NO
+    background=NO
     userlist_enable=NO
     pam_service_name=login
     xferlog_enable=NO
