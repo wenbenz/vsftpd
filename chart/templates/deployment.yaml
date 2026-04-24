@@ -79,6 +79,8 @@ spec:
               mountPath: /tmp
             - name: run
               mountPath: /var/run
+            - name: log
+              mountPath: /var/log
             {{- if include "vsftpd.tlsEnabled" . }}
             - name: tls
               mountPath: /etc/vsftpd/ssl
@@ -106,6 +108,9 @@ spec:
           emptyDir:
             medium: Memory
         - name: run
+          emptyDir:
+            medium: Memory
+        - name: log
           emptyDir:
             medium: Memory
         {{- if include "vsftpd.tlsEnabled" . }}
