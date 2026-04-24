@@ -6,6 +6,7 @@ metadata:
     {{- include "vsftpd.labels" . | nindent 4 }}
 spec:
   replicas: 1
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "vsftpd.selectorLabels" . | nindent 6 }}
@@ -18,7 +19,7 @@ spec:
         - name: init-users
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/init-users.sh"]
+          command: ["/entrypoint.sh", "init"]
           volumeMounts:
             - name: users-conf
               mountPath: /etc/vsftpd/users.conf
@@ -34,7 +35,7 @@ spec:
         - name: vsftpd
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["vsftpd", "/etc/vsftpd/vsftpd.conf"]
+          command: ["/entrypoint.sh", "start"]
           securityContext:
             readOnlyRootFilesystem: true
             capabilities:
@@ -79,6 +80,8 @@ spec:
               mountPath: /tmp
             - name: run
               mountPath: /var/run
+            - name: log
+              mountPath: /var/log
             {{- if include "vsftpd.tlsEnabled" . }}
             - name: tls
               mountPath: /etc/vsftpd/ssl
@@ -106,6 +109,9 @@ spec:
           emptyDir:
             medium: Memory
         - name: run
+          emptyDir:
+            medium: Memory
+        - name: log
           emptyDir:
             medium: Memory
         {{- if include "vsftpd.tlsEnabled" . }}

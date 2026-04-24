@@ -20,10 +20,13 @@ data:
     {{- end }}
     listen=YES
     listen_ipv6=NO
+    background=NO
     userlist_enable=NO
     pam_service_name=login
-    xferlog_enable=NO
-    xferlog_std_format=YES
+    xferlog_enable=YES
+    xferlog_file=/var/log/vsftpd.log
+    xferlog_std_format=NO
+    log_ftp_protocol=YES
     seccomp_sandbox=NO
     idle_session_timeout=300
     data_connection_timeout=120
@@ -35,4 +38,5 @@ data:
     rsa_private_key_file=/etc/vsftpd/ssl/tls.key
     force_local_logins_ssl=YES
     force_local_data_ssl=YES
+    require_ssl_reuse=NO
     {{- end }}

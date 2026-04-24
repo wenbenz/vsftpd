@@ -5,9 +5,8 @@ RUN apk add --no-cache vsftpd=3.0.5-r2
 
 COPY vsftpd.conf /etc/vsftpd/vsftpd.conf
 COPY entrypoint.sh /entrypoint.sh
-COPY init-users.sh /init-users.sh
 
-RUN chmod +x /entrypoint.sh /init-users.sh \
+RUN chmod +x /entrypoint.sh \
     && chmod 600 /etc/vsftpd/vsftpd.conf
 
 EXPOSE 21
