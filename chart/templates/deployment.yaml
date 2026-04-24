@@ -36,6 +36,11 @@ spec:
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           command: ["/entrypoint.sh", "start"]
+          {{- if include "vsftpd.tlsEnabled" . }}
+          env:
+            - name: OPENSSL_CONF
+              value: /etc/vsftpd/openssl.cnf
+          {{- end }}
           securityContext:
             readOnlyRootFilesystem: true
             capabilities:
@@ -64,6 +69,12 @@ spec:
             - name: vsftpd-conf
               mountPath: /etc/vsftpd/vsftpd.conf
               subPath: vsftpd.conf
+            {{- if include "vsftpd.tlsEnabled" . }}
+            - name: vsftpd-conf
+              mountPath: /etc/vsftpd/openssl.cnf
+              subPath: openssl.cnf
+              readOnly: true
+            {{- end }}
             - name: etc-data
               mountPath: /etc/passwd
               subPath: passwd

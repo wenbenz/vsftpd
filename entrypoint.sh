@@ -48,6 +48,7 @@ cmd_init() {
 }
 
 cmd_start() {
+  export LD_PRELOAD=/usr/local/lib/fix-ssl-cache.so
   touch /var/log/vsftpd.log
   tail -f /var/log/vsftpd.log &
   exec vsftpd /etc/vsftpd/vsftpd.conf
