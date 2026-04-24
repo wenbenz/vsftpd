@@ -19,7 +19,7 @@ spec:
         - name: init-users
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["/init-users.sh"]
+          command: ["/entrypoint.sh", "init"]
           volumeMounts:
             - name: users-conf
               mountPath: /etc/vsftpd/users.conf
@@ -35,7 +35,7 @@ spec:
         - name: vsftpd
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
-          command: ["sh", "-c", "touch /var/log/vsftpd.log && tail -f /var/log/vsftpd.log & exec vsftpd /etc/vsftpd/vsftpd.conf"]
+          command: ["/entrypoint.sh", "start"]
           securityContext:
             readOnlyRootFilesystem: true
             capabilities:
